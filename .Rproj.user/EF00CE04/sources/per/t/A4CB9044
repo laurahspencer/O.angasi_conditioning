@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1535896007736.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3022761998",
+    "id" : "A4CB9044",
+    "lastKnownWriteTime" : 1535899181,
+    "last_content_update" : 1535899181868,
+    "path" : "~/Documents/Roberts Lab/Australia/R.Histology.R",
+    "project_path" : "R.Histology.R",
+    "properties" : {
+        "cursorPosition" : "14,9",
+        "scrollLine" : "5",
+        "tempName" : "Untitled2"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

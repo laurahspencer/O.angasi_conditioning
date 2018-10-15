@@ -1,0 +1,199 @@
+Histology <- read.csv("Data/2017-Oly-Histo-Results-REDO-redostage5.csv", header=T, stringsAsFactors = T, na.strings = "NA")
+Histology$TEMPERATURE <- as.factor(Histology$TEMPERATURE)
+Histology$Dominant.Stage <- as.factor(Histology$Dominant.Stage)
+Histology$Secondary.Stage <- as.factor(Histology$Secondary.Stage)
+
+### Stats
+# Resource: http://www.sthda.com/english/wiki/chi-square-test-of-independence-in-r
+library("gplots")
+
+########## Compare sex and dominant stage between temperatures at February sampling 
+
+Histo.February <- droplevels(subset(Histology, SAMPLING == "FEBRUARY"))
+
+CT.SEX.Feb <- table(Histo.February$TREATMENT, Histo.February$SEX)
+CT.STAGE.Feb <- table(Histo.February$TREATMENT, Histo.February$Dominant.Stage)
+
+# Compare the sex and stages between treatements in February 
+fisher.test(CT.SEX.Feb) #p=0.3478
+fisher.test(CT.STAGE.Feb) #p=2.803e-05 - stages different between temperature. 10C more advanced. 
+
+Feb.chisq.sex <- chisq.test(CT.SEX.Feb, simulate.p.value = TRUE) #X-squared = 5.7035, df = NA, p-value = 0.355 
+Feb.chisq.stage <- chisq.test(CT.STAGE.Feb, simulate.p.value = TRUE) #X-squared = 26.107, df = NA, p-value = 0.0004998
+
+library(corrplot)
+corrplot(Feb.chisq.stage$residuals, is.cor = FALSE) #Which cells have positive (blue) and negative (red) associations? More 2 & 3 stages in 10C group, and more regressed (5) in 6C group 
+Feb.chisq.stage.contrib <- 100*Feb.chisq.stage$residuals^2/Feb.chisq.stage$statistic 
+round(Feb.chisq.stage.contrib, 3) #what are the percent contribution from each cell? 
+corrplot(Feb.chisq.stage.contrib, is.cor = FALSE) 
+
+# Result: sign. difference between 10C and 6C gonad stages, where 6C had more regressed gonad tissue (22 oysters, versus 4), and 10C had more oysters in advanced gametogenesis (19 vs. 8, stage 2), and more ripe gonad (20 vs. 8). 
+
+# Contingency table, showing stages in 10C and 6C treatment groups 
+balloonplot(t(CT.STAGE.Feb), main ="Oly STAGE pre-OA, All Populations \nX-squared = 26.107, p-value = 0.0004998", xlab ="", ylab="",label = T, show.margins = FALSE)
+
+# Stacked barplot showing different stage by tempertature 
+par(mfrow=c(1, 1), mar=c(5, 5, 4, 8))
+barplot(t(CT.STAGE.Feb), main="Stage pre-OA", xlab="Temperature", ylab="No. oysters", las=1, col=c("#E2E6BD",  "#EAAB28", "#E78A38","#D33F6A", "#DF6753", "lightsalmon"), cex.main=1.5, cex.lab=1.5, cex.axis = 1.5, cex.names = 1.5, legend.text = TRUE, args.legend = list(x = "topright", bty = "n", inset=c(-0.45, 0), title="Stage", cex=1.5))
+
+
+# DID GONAD DEVELOP IN PH TREATMENT? ASSESS 6C GROUP AND 10C GROUP SEPARATELY (SEPARATE STARTING POINT)
+
+# compare 6-amb to 6 
+CT.STAGE.6.AMB <- table(subset(Histology, TEMPERATURE==6 & (PH=="AMBIENT" | is.na(PH)))$SAMPLING, subset(Histology, TEMPERATURE==6 & (PH=="AMBIENT" | is.na(PH)))$Dominant.Stage)
+chisq.test(CT.STAGE.6.AMB, simulate.p.value = TRUE) #P=0.0004998
+
+# compare 6-low to 6
+CT.STAGE.6.LOW <- table(subset(Histology, TEMPERATURE==6 & (PH=="LOW" | is.na(PH)))$SAMPLING, subset(Histology, TEMPERATURE==6 & (PH=="LOW" | is.na(PH)))$Dominant.Stage)
+chisq.test(CT.STAGE.6.LOW, simulate.p.value = TRUE) #P=0.02099
+
+# compare 10-amb to 10
+CT.STAGE.10.AMB <- table(subset(Histology, TEMPERATURE==10 & (PH=="AMBIENT" | is.na(PH)))$SAMPLING, subset(Histology, TEMPERATURE==10 & (PH=="AMBIENT" | is.na(PH)))$Dominant.Stage)
+chisq.test(CT.STAGE.10.AMB, simulate.p.value = TRUE) #P=0.1854
+
+# compare 10-low to 10
+CT.STAGE.10.LOW <- table(subset(Histology, TEMPERATURE==10 & (PH=="LOW" | is.na(PH)))$SAMPLING, subset(Histology, TEMPERATURE==10 & (PH=="LOW" | is.na(PH)))$Dominant.Stage)
+chisq.test(CT.STAGE.10.LOW, simulate.p.value = TRUE) #P=0.07146
+
+rownames(CT.STAGE.Apr) <- c("10\nAMB", "10\nLOW", "6\nAMB", "6\nLOW")
+
+par(mfrow=c(1, 1), mar=c(5, 5, 4, 8))
+barplot(t(CT.STAGE.Apr), main="Stage post-OA, 10C", xlab="TREATMENT", ylab="No. oysters", las=1, col=c("#E2E6BD",  "#EAAB28", "#E78A38","#D33F6A", "#DF6753", "lightsalmon"), cex.main=1.5, cex.lab=1.5, cex.axis = 1.2, cex.names = 1.2, legend.text = TRUE, args.legend = list(x = "topright", bty = "n", inset=c(-0.45, 0), title="Stage", cex=1.5))
+
+
+# tables for stacked bar plots - one for 6C, one for 10C 
+levels(Histology$PH) <- c(levels(Histology$PH),"PRE")
+Histology$PH <- relevel(Histology$PH, ref="PRE")
+View(Histology)
+Histology[is.na(Histology$PH),"PH"] <- "PRE"
+
+CT.STAGE.6 <- table(subset(Histology, TEMPERATURE==6)$PH, subset(Histology, TEMPERATURE==6)$Dominant.Stage)
+CT.STAGE.10 <- table(subset(Histology, TEMPERATURE==10)$PH, subset(Histology, TEMPERATURE==10)$Dominant.Stage)
+
+colnames(CT.STAGE.6) <- c("Undifferentiated (0)", "Early (1)", "Advanced (2)", "Ripe (3)", "Partially\nSpawned (4)", "Regressing(5)")
+
+colnames(CT.STAGE.10) <- c("Undifferentiated (0)", "Early (1)", "Advanced (2)", "Ripe (3)", "Partially\nSpawned (4)", "Regressing(5)")
+
+par(mfrow=c(1, 1), mar=c(5, 5, 4, 18))
+barplot(t(prop.table(CT.STAGE.6, 1)), main="Stage, pre- & post-Treatment\nchilled group (6C)", xlab="pH Treatment", ylab="% Sampled", las=1, col=c("#E2E6BD",  "#EAAB28", "#E78A38","#D33F6A", "#DF6753", "lightsalmon"), cex.main=1.5, cex.lab=1.5, cex.axis = 1.2, cex.names = 1.2, legend.text = TRUE, args.legend = list(x = "topright", bty = "n", inset=c(-0.45, 0), title="Gonad Stage", cex=1.5))
+
+barplot(t(prop.table(CT.STAGE.10,1)), main="Stage, pre- & post-Treatment\nnot chilled (10C)", xlab="pH Treatment", ylab="% Sampled", las=1, col=c("#E2E6BD",  "#EAAB28", "#E78A38","#D33F6A", "#DF6753", "lightsalmon"), cex.main=1.5, cex.lab=1.5, cex.axis = 1.2, cex.names = 1.2, legend.text = TRUE, args.legend = list(x = "topright", bty = "n", inset=c(-0.45, 0), title="Gonad Stage", cex=1.5))
+
+
+
+
+###  Not sure if I need the below 
+
+
+########## Compare sex and dominant stage between pH treatment at April sampling 
+
+Histo.April <- droplevels(subset(Histology, SAMPLING == "APRIL"))
+
+CT.SEX.Apr <- table(Histo.April$TREATMENT, Histo.April$SEX)
+CT.STAGE.Apr <- table(Histo.April$TREATMENT, Histo.April$Dominant.Stage)
+
+Apr.chisq.sex <- chisq.test(CT.SEX.Apr, simulate.p.value = TRUE) # X-squared = 11.635, df = NA, p-value = 0.7091
+Apr.chisq.stage <- chisq.test(CT.STAGE.Apr, simulate.p.value = TRUE) # X-squared = 35.633, df = NA, p-value = 0.001999
+
+corrplot(Apr.chisq.stage$residuals, is.cor = FALSE) # visualize positive (blue) & negative (red) associations between treatment & stage
+Apr.chisq.stage.contrib <- 100*Apr.chisq.stage$residuals^2/Apr.chisq.stage$statistic 
+round(Apr.chisq.stage.contrib, 3) #most contribution to test is: 
+      # 19% due to 6-ambient in stage 0
+      # 12% due to 10-low in stage 5
+      # 12% due to 6-low in stage 3
+      # 13% due to 6-low in stage 4
+      # 10% due to 6-low in stage 5
+corrplot(Apr.chisq.stage.contrib, is.cor = FALSE) 
+
+# Result: sign. difference between 10C and 6C gonad stages, where 6C had more regressed gonad tissue (25 oysters, versus 5), and 10C had more oysters in advanced gametogenesis (19 vs. 8, stage 2), and more ripe gonad (20 vs. 8). 
+
+# Contingency table showing differences in stage between treatment 
+balloonplot(t(CT.STAGE.Apr), main ="Oly STAGE post-OA, All Populations \nX-squared = 35.633, p-value = 0.001999", xlab ="", ylab="",label = T, show.margins = FALSE)
+
+# Compare sex/stage between pH treatments, for each temp separately 
+
+CT.SEX.Apr.6 <- table(subset(Histo.April, TEMPERATURE == 6)$PH, subset(Histo.April, TEMPERATURE == 6)$SEX)
+CT.STAGE.Apr.6 <- table(subset(Histo.April, TEMPERATURE == 6)$PH, subset(Histo.April, TEMPERATURE == 6)$Dominant.Stage)
+
+CT.SEX.Apr.10 <- table(subset(Histo.April, TEMPERATURE == 10)$PH, subset(Histo.April, TEMPERATURE == 10)$SEX)
+CT.STAGE.Apr.10 <- table(subset(Histo.April, TEMPERATURE == 10)$PH, subset(Histo.April, TEMPERATURE == 10)$Dominant.Stage)
+
+fisher.test(CT.SEX.Apr.6) #P=0.2398 
+fisher.test(CT.STAGE.Apr.6) #P=0.008287 <--- DIFF. but how? 
+
+fisher.test(CT.SEX.Apr.10) # P=0.6461
+fisher.test(CT.STAGE.Apr.10) # P=0.08343 <--- Not different 
+
+par(mfrow=c(1, 1), mar=c(5, 5, 4, 8))
+barplot(t(CT.STAGE.Apr.6), main="Stage post-OA, 6C", xlab="pH", ylab="No. oysters", las=1, col=c("#E2E6BD",  "#EAAB28", "#E78A38","#D33F6A", "#DF6753", "lightsalmon"), cex.main=1.5, cex.lab=1.5, cex.axis = 1.3, cex.names = 1.3, legend.text = TRUE, args.legend = list(x = "topright", bty = "n", inset=c(-0.45, 0), title="Stage", cex=1.5))
+
+par(mfrow=c(1, 1), mar=c(5, 5, 4, 8))
+barplot(t(CT.STAGE.Apr.10), main="Stage post-OA, 10C", xlab="pH", ylab="No. oysters", las=1, col=c("#E2E6BD",  "#EAAB28", "#E78A38","#D33F6A", "#DF6753", "lightsalmon"), cex.main=1.5, cex.lab=1.5, cex.axis = 1.3, cex.names = 1.3, legend.text = TRUE, args.legend = list(x = "topright", bty = "n", inset=c(-0.45, 0), title="Stage", cex=1.5))
+
+# Compare sex and stage between Feb. and Apr. samplings - do oysters mature during OA treatment?   
+Histology$SAMPLING <- relevel(Histology$SAMPLING, ref = "FEBRUARY")
+
+CT.SEX.sampling <- table(Histology$SAMPLING, Histology$SEX)
+CT.STAGE.sampling <- table(Histology$SAMPLING, Histology$Dominant.Stage)
+
+samplings.chisq.sex <- chisq.test(CT.SEX.sampling, simulate.p.value = TRUE) # X-squared = 6.306, df = NA, p-value = 0.2764
+samplings.chisq.stage <- chisq.test(CT.STAGE.sampling, simulate.p.value = TRUE) # X-squared = 28.547, df = NA, p-value = 0.0004998 
+
+balloonplot(t(CT.STAGE.sampling), main ="Oly STAGE change during OA treatment, All Populations \nX-squared = 28.547, p-value = 0.0004998 ", xlab ="", ylab="",label = T, show.margins = FALSE)
+
+# Result: sign. difference between 10C and 6C gonad stages, where 6C had more regressed gonad tissue (25 oysters, versus 5), and 10C had more oysters in advanced gametogenesis (19 vs. 8, stage 2), and more ripe gonad (20 vs. 8). 
+
+# Compare 6 and 10 groups separately
+CT.STAGE.sampling.6 <- table(subset(Histology, TEMPERATURE==6)$SAMPLING, subset(Histology, TEMPERATURE==6)$Dominant.Stage)
+CT.STAGE.sampling.10 <- table(subset(Histology, TEMPERATURE==10)$SAMPLING, subset(Histology, TEMPERATURE==10)$Dominant.Stage)
+
+samplings.chisq.stage.6 <- chisq.test(CT.STAGE.sampling.6, simulate.p.value = TRUE) # X-squared = 27.601, df = NA, p-value = 0.0004998 
+8/sum(1+6+8+8+9+22) #8% ripe Feb
+22/sum(2+10+31+22+2+10) #29% ripe April
+
+samplings.chisq.stage.10 <- chisq.test(CT.STAGE.sampling.10, simulate.p.value = TRUE) # X-squared = 11.097, df = NA, p-value = 0.03848
+20/sum(2+4+19+20+5+4) #37% ripe Feb
+32/sum(1+13+29+32+3) #41% ripe April
+
+
+# boneyard 
+
+# Run same stats on each population separately: 
+
+Hist.SN <- subset(Histology, POPULATION %in% "SN")
+Hist.NF <- subset(Histology, POPULATION %in% "NF")
+Hist.K <- subset(Histology, POPULATION %in% "K")
+Hist.HL <- subset(Histology, POPULATION %in% "HL")
+
+# Contingency tables for each population, by SEX and STAGE, for post-OA treatment groups
+
+# South Sound F1
+CT.SEX.Feb.SN <- table(subset(Histo.February, POPULATION == "SN")$TREATMENT, subset(Histo.February, POPULATION == "SN")$SEX)
+CT.STAGE.Feb.SN <- table(subset(Histo.February, POPULATION == "SN")$TREATMENT, subset(Histo.February, POPULATION == "SN")$Dominant.Stage)
+
+# North Sound
+CT.SEX.Feb.NF <- table(subset(Histo.February, POPULATION == "NF")$TREATMENT, subset(Histo.February, POPULATION == "NF")$SEX)
+CT.STAGE.Feb.NF <- table(subset(Histo.February, POPULATION == "NF")$TREATMENT, subset(Histo.February, POPULATION == "NF")$Dominant.Stage)
+
+# Hood Canal
+CT.SEX.Feb.HL <- table(subset(Histo.February, POPULATION == "HL")$TREATMENT, subset(Histo.February, POPULATION == "HL")$SEX)
+CT.STAGE.Feb.HL <- table(subset(Histo.February, POPULATION == "HL")$TREATMENT, subset(Histo.February, POPULATION == "HL")$Dominant.Stage)
+
+# South Sound F2
+CT.SEX.Feb.K <- table(subset(Histo.February, POPULATION == "K")$TREATMENT, subset(Histo.February, POPULATION == "K")$SEX)
+CT.STAGE.Feb.K <- table(subset(Histo.February, POPULATION == "K")$TREATMENT, subset(Histo.February, POPULATION == "K")$Dominant.Stage)
+
+
+# Use Fisher's exact test, since sample sizes are smaller, to assess differences within populations 
+fisher.test(CT.SEX.Feb.SN) # 0.9509
+fisher.test(CT.SEX.Feb.NF) # 0.2797
+fisher.test(CT.SEX.Feb.HL) #0.007816 <-- Diff. Looks like more males in 10C group, more hermaphrodites in 6C grp
+fisher.test(CT.SEX.Feb.K) # 1
+
+# Stage
+fisher.test(CT.STAGE.Feb.SN) # 0.06556
+fisher.test(CT.STAGE.Feb.NF) # 0.01804 <-- Diff
+fisher.test(CT.STAGE.Feb.HL) # 0.2024
+fisher.test(CT.STAGE.Feb.K) # 0.1508
+
+

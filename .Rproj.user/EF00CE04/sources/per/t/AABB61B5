@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1531734741860.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2063354050",
+    "id" : "AABB61B5",
+    "lastKnownWriteTime" : 1531736354,
+    "last_content_update" : 1531736354998,
+    "path" : "~/Documents/Roberts Lab/Australia/Condition-Index.R",
+    "project_path" : "Condition-Index.R",
+    "properties" : {
+        "cursorPosition" : "13,0",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
