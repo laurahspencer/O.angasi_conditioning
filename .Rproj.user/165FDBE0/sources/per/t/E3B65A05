@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1560203657127.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1137382355",
+    "id" : "E3B65A05",
+    "lastKnownWriteTime" : 1560366748,
+    "last_content_update" : 1560366748962,
+    "path" : "~/Documents/roberts-lab/O.angasi_conditioning/notebooks/R.Histology.R",
+    "project_path" : "notebooks/R.Histology.R",
+    "properties" : {
+        "cursorPosition" : "43,0",
+        "scrollLine" : "41"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
