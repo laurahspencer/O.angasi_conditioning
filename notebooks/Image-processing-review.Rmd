@@ -1,0 +1,158 @@
+---
+title: "Angasi"
+author: "Laura H Spencer"
+date: "4/29/2020"
+output: html_document
+---
+
+### Load libraries 
+
+```{r setup, message=FALSE, warning=FALSE, results=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+list.of.packages <- c("gsheet", "tidyverse", "janitor", "plotly", "glmmTMB", "metafor", "broom.mixed", "car", "viridis", "RCurl", "corrplot", "PerformanceAnalytics", "stringr") #add new libraries here 
+
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+
+# Load all libraries 
+lapply(list.of.packages, FUN = function(X) {
+  do.call("require", list(X)) 
+})
+sessionInfo()
+```
+
+### Read in Laura's preliminary sex and stage assigment data 
+
+```{r}
+# Read in data 
+data.url <- getURL("https://raw.githubusercontent.com/laurahspencer/O.angasi_conditioning/master/data/Angasi-Histology.csv")
+prelim.data <- read_csv(data.url)
+prelim.data$sample <- str_pad(prelim.data$SAMPLE, 3, pad="0")
+```
+
+### Read in data from GoogleSheets 
+
+NOTE: data is read directly from the GoogleSheet using a share link that was set to "anyone with a link can view"
+ 
+```{r}
+batch1 <- as_tibble(gsheet2tbl('https://docs.google.com/spreadsheets/d/1vmwpjjPyJkU6oU4C6pm9Zi-Wgmd0otAhA9UKOIlBmCY/edit?usp=sharing')) 
+batch2 <- as_tibble(gsheet2tbl('https://docs.google.com/spreadsheets/d/1bUmvkY7yfqmNjinRVbdiNZrULhmtIy2RaC7n3HNL3ok/edit?usp=sharing')) 
+```
+
+### Bind 2 datasets together, & calculate male & female percentages from pixel counts (total gonad, total image), separated by analysis 
+
+```{r}
+image.data <- rbind(batch1[1:17], batch2[1:17]) %>% #bind two spreadsheets together 
+  mutate(
+  bgr_perc_f_total = bgr_pixel_f/image_size*100,                     #calculate %female pixels out of total image pixels    
+  bgr_perc_m_total = bgr_pixel_m/image_size*100,                    #calculate %male pixels out of total image pixels 
+  bgr_perc_f_gonad = bgr_pixel_f/(bgr_pixel_f+bgr_pixel_m)*100,      #calculate %female pixels out of total (female + male fixels)
+  bgr_perc_m_gonad = bgr_pixel_m/(bgr_pixel_f+bgr_pixel_m)*100,      #calculate %male pixels out of total (female + male fixels)
+  bgr_perc_gonad_total = 100*(bgr_pixel_f+bgr_pixel_m)/image_size,   #calculate %gonad (male+female pixels out of total image pixels) 
+  
+  # redo calculations for hsv analysis
+  hsv_perc_f_total = hsv_pixel_f/image_size*100,
+  hsv_perc_m_total = hsv_pixel_m/image_size*100,
+  hsv_perc_f_gonad = hsv_pixel_f/(hsv_pixel_f+hsv_pixel_m)*100,
+  hsv_perc_m_gonad = hsv_pixel_m/(hsv_pixel_f+hsv_pixel_m)*100,
+  hsv_perc_gonad_total = 100*(hsv_pixel_f+hsv_pixel_m)/image_size,
+  
+  # redo calculations for lab analysis
+  lab_perc_f_total = lab_pixel_f/image_size*100,
+  lab_perc_m_total = lab_pixel_m/image_size*100,
+  lab_perc_f_gonad = lab_pixel_f/(lab_pixel_f+lab_pixel_m)*100,
+  lab_perc_m_gonad = lab_pixel_m/(lab_pixel_f+lab_pixel_m)*100,
+  lab_perc_gonad_total = 100*(lab_pixel_f+lab_pixel_m)/image_size,
+  
+  # redo calculations for ycrcb analysis
+  ycrcb_perc_f_total = ycrcb_pixel_f/image_size*100,
+  ycrcb_perc_m_total = ycrcb_pixel_m/image_size*100,
+  ycrcb_perc_f_gonad = ycrcb_pixel_f/(ycrcb_pixel_f+ycrcb_pixel_m)*100,
+  ycrcb_perc_m_gonad = ycrcb_pixel_m/(ycrcb_pixel_f+ycrcb_pixel_m)*100, 
+  ycrcb_perc_gonad_total = 100*(ycrcb_pixel_f+ycrcb_pixel_m)/image_size
+  )
+```
+
+### Inspect distirbution of the % of image pixles that contain male- or female-assigned pixels (i.e. % of pixels designated as gonad)
+
+```{r}
+hist(image.data$bgr_perc_gonad_total, col="gray95", main="bgr % gonad\n(M+F/total image)")
+hist(image.data$hsv_perc_gonad_total, col="gray75", main="hsv % gonad\n(M+F/total image)")
+hist(image.data$lab_perc_gonad_total, col="gray55", main="lab % gonad\n(M+F/total image)")
+hist(image.data$ycrcb_perc_gonad_total, col="gray35", main="ycrcb % gonad\n(M+F/total image)")
+```
+
+### Inspect correlations between the analyses, for female & male separately 
+
+```{r}
+# Plot correlation among female analyses 
+image.data %>% 
+  #filter(scalebar=="yes") %>%
+  dplyr::select(bgr_perc_f_total, hsv_perc_f_total, lab_perc_f_total, ycrcb_perc_f_total) %>% 
+    chart.Correlation(histogram=F, pch=19)
+
+# Plot correlation among male analyses 
+image.data %>% 
+  #filter(scalebar=="yes") %>%
+  dplyr::select(bgr_perc_m_total, hsv_perc_m_total, lab_perc_m_total, ycrcb_perc_m_total) %>% 
+  chart.Correlation(histogram=F, pch=19) 
+```
+
+### Create new columns with sample number, magnification level, in the image analsis dataframe 
+
+```{r}
+image.data$sample <- substr(image.data$filename, start=16, stop=18) #extract sample # from image file name, add that to new column called "sample"
+image.data$magnification <- as.factor(substr(image.data$filename, start=20, stop=22)) #extract image amplification level from image file name, add that to new column called "magnification"
+```
+
+### Merge image analysis data with preliminary sex assignment data 
+
+```{r}
+angasi.merged <- merge(x=prelim.data, y=image.data) #both dataframes have column "sample" so it automerges using that column 
+```
+
+### Inspect image analysis data against preliminary sex assignment 
+
+#### Look at % pixels assigned to each sex, out of total image pixels 
+
+```{r}
+# Plot showing % FEMALE gonad out of total image pixels, by analysis 
+ggplotly(angasi.merged %>% 
+  #filter(magnification=="10x") %>%  #filter for various magnification levels 
+  #filter(scalebar=="yes") %>%      #filter for presence/absence of scale bar 
+  dplyr::select(sample, filename, SEX, bgr_perc_f_total, hsv_perc_f_total, lab_perc_f_total, ycrcb_perc_f_total) %>% melt() %>%
+  ggplot(aes(x=SEX, y=value, color=SEX, label=sample)) + geom_jitter(pch=19) + facet_wrap(~variable) + theme_minimal() + 
+  ggtitle("% FEMALE for each analysis (out of total image pixels)") + ylab("female pixes / total image pixels"))
+
+
+# Plot showing % MALE gonad out of total image pixels, by analysis 
+ggplotly(angasi.merged %>% 
+  #filter(magnification=="10x") %>%  #filter for various magnification levels 
+  #filter(scalebar=="yes") %>%      #filter for presence/absence of scale bar 
+  dplyr::select(sample, filename, SEX, bgr_perc_m_total, hsv_perc_m_total, lab_perc_m_total, ycrcb_perc_m_total) %>% melt() %>%
+  ggplot(aes(x=SEX, y=value, color=SEX, label=sample)) + geom_jitter(pch=19) + facet_wrap(~variable) + theme_minimal() + 
+  ggtitle("% FEMALE for each analysis (out of total image pixels)") + ylab("MALE pixes / total image pixels"))
+```
+
+#### Look at % pixels assigned to each sex, out of total gonad pixels (M+F) 
+
+```{r}
+# Plot showing % FEMALE gonad out of total image pixels, by analysis 
+ggplotly(angasi.merged %>% 
+  #filter(magnification=="10x") %>%  #filter for various magnification levels 
+  #filter(scalebar=="yes") %>%      #filter for presence/absence of scale bar 
+  dplyr::select(sample, filename, SEX, bgr_perc_f_gonad, hsv_perc_f_gonad, lab_perc_f_gonad, ycrcb_perc_f_gonad) %>% melt() %>%
+  ggplot(aes(x=SEX, y=value, color=SEX, label=sample)) + geom_jitter(pch=19) + facet_wrap(~variable) + theme_minimal() + 
+  ggtitle("% FEMALE for each analysis (out of gonad image pixels)") + ylab("female pixes / gonad image pixels"))
+
+
+# Plot showing % MALE gonad out of gonad image pixels, by analysis 
+ggplotly(angasi.merged %>% 
+  #filter(magnification=="10x") %>%  #filter for various magnification levels 
+  #filter(scalebar=="yes") %>%      #filter for presence/absence of scale bar 
+  dplyr::select(sample, filename, SEX, bgr_perc_m_gonad, hsv_perc_m_gonad, lab_perc_m_gonad, ycrcb_perc_m_gonad) %>% melt() %>%
+  ggplot(aes(x=SEX, y=value, color=SEX, label=sample)) + geom_jitter(pch=19) + facet_wrap(~variable) + theme_minimal() + 
+  ggtitle("% FEMALE for each analysis (out of gonad image pixels)") + ylab("MALE pixes / gonad image pixels"))
+```
+
