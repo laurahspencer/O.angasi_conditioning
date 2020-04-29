@@ -132,7 +132,7 @@ ggplotly(angasi.merged %>%
   #filter(scalebar=="yes") %>%      #filter for presence/absence of scale bar 
   dplyr::select(sample, filename, SEX, bgr_perc_m_total, hsv_perc_m_total, lab_perc_m_total, ycrcb_perc_m_total) %>% melt() %>%
   ggplot(aes(x=SEX, y=value, color=SEX, label=sample)) + geom_jitter(pch=19) + facet_wrap(~variable) + theme_minimal() + 
-  ggtitle("% FEMALE for each analysis (out of total image pixels)") + ylab("MALE pixes / total image pixels"))
+  ggtitle("% MALE for each analysis (out of total image pixels)") + ylab("MALE pixes / total image pixels"))
 ```
 
 #### Look at % pixels assigned to each sex, out of total gonad pixels (M+F) 
@@ -153,7 +153,7 @@ ggplotly(angasi.merged %>%
   #filter(scalebar=="yes") %>%      #filter for presence/absence of scale bar 
   dplyr::select(sample, filename, SEX, bgr_perc_m_gonad, hsv_perc_m_gonad, lab_perc_m_gonad, ycrcb_perc_m_gonad) %>% melt() %>%
   ggplot(aes(x=SEX, y=value, color=SEX, label=sample)) + geom_jitter(pch=19) + facet_wrap(~variable) + theme_minimal() + 
-  ggtitle("% FEMALE for each analysis (out of gonad image pixels)") + ylab("MALE pixes / gonad image pixels"))
+  ggtitle("% MALE for each analysis (out of gonad image pixels)") + ylab("MALE pixes / gonad image pixels"))
 ```
 
 ### Export merged dataframes as .csv 
