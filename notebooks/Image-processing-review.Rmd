@@ -1,5 +1,5 @@
 ---
-title: "Angasi"
+title: "Angasi Image Processing Review"
 author: "Laura H Spencer"
 date: "4/29/2020"
 output: html_document
@@ -10,7 +10,7 @@ output: html_document
 ```{r setup, message=FALSE, warning=FALSE, results=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-list.of.packages <- c("gsheet", "tidyverse", "janitor", "plotly", "glmmTMB", "metafor", "broom.mixed", "car", "viridis", "RCurl", "corrplot", "PerformanceAnalytics", "stringr") #add new libraries here 
+list.of.packages <- c("gsheet", "tidyverse", "janitor", "plotly", "glmmTMB", "metafor", "broom.mixed", "car", "viridis", "RCurl", "corrplot", "PerformanceAnalytics", "stringr", "reshape2") #add new libraries here 
 
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
@@ -26,8 +26,8 @@ sessionInfo()
 
 ```{r}
 # Read in data 
-data.url <- getURL("https://raw.githubusercontent.com/laurahspencer/O.angasi_conditioning/master/data/Angasi-Histology.csv")
-prelim.data <- read_csv(data.url)
+data.url <- getURL("https://raw.githubusercontent.com/laurahspencer/O.angasi_conditioning/master/data/Angasi-Histology.csv", ssl.verifypeer=0L, followlocation=1L)
+prelim.data <- read.csv(text=data.url)
 prelim.data$sample <- str_pad(prelim.data$SAMPLE, 3, pad="0")
 ```
 
@@ -154,5 +154,11 @@ ggplotly(angasi.merged %>%
   dplyr::select(sample, filename, SEX, bgr_perc_m_gonad, hsv_perc_m_gonad, lab_perc_m_gonad, ycrcb_perc_m_gonad) %>% melt() %>%
   ggplot(aes(x=SEX, y=value, color=SEX, label=sample)) + geom_jitter(pch=19) + facet_wrap(~variable) + theme_minimal() + 
   ggtitle("% FEMALE for each analysis (out of gonad image pixels)") + ylab("MALE pixes / gonad image pixels"))
+```
+
+### Export merged dataframes as .csv 
+
+```{r}
+write.csv(x = angasi.merged, file = "../data/2020-04-29_angasi-image-processing.csv")
 ```
 
