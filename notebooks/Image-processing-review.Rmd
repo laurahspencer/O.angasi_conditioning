@@ -38,12 +38,13 @@ NOTE: data is read directly from the GoogleSheet using a share link that was set
 ```{r}
 batch1 <- as_tibble(gsheet2tbl('https://docs.google.com/spreadsheets/d/1vmwpjjPyJkU6oU4C6pm9Zi-Wgmd0otAhA9UKOIlBmCY/edit?usp=sharing')) 
 batch2 <- as_tibble(gsheet2tbl('https://docs.google.com/spreadsheets/d/1bUmvkY7yfqmNjinRVbdiNZrULhmtIy2RaC7n3HNL3ok/edit?usp=sharing')) 
+image10x <- as_tibble(gsheet2tbl('https://docs.google.com/spreadsheets/d/1An8KtxzlPDyirHNVihmlng2YYMROMexqx3tpAm1nGv0/edit?usp=sharing')) 
 ```
 
 ### Bind 2 datasets together, & calculate male & female percentages from pixel counts (total gonad, total image), separated by analysis 
 
 ```{r}
-image.data <- rbind(batch1[1:17], batch2[1:17]) %>% #bind two spreadsheets together 
+image.data <- image10x %>% #rbind(batch1[1:17], batch2[1:17]) %>% #if using all data (not just 10x) use this to bind two spreadsheets together 
   mutate(
   bgr_perc_f_total = bgr_pixel_f/image_size*100,                     #calculate %female pixels out of total image pixels    
   bgr_perc_m_total = bgr_pixel_m/image_size*100,                    #calculate %male pixels out of total image pixels 
